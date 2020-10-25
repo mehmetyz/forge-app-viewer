@@ -1,0 +1,41 @@
+﻿@page "/"
+@namespace ForgeApp.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forge App - Mehmet Yıldız</title>
+    <base href="~/" />
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/default.css" />
+    <link rel="stylesheet" href="_content/BlazorInputFile/inputfile.js" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="css/home.css" rel="stylesheet" />
+
+
+    <!--Forge Viewer Files-->
+    <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.min.css" type="text/css">
+    <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js"></script>
+
+
+
+    <!--Radzen Files-->
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+    <!--Forge Viewer Functions-->
+    <script src="js/ForgeViewer.js"></script>
+
+
+
+</head>
+<body>
+    <app>
+        @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
+    </app>
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/BlazorInputFile/inputfile.js"></script>
+</body>
+</html>

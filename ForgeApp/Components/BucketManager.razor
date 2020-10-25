@@ -1,0 +1,148 @@
+﻿
+@using Radzen;
+@using Radzen.Blazor;
+
+<div class="modal-header">
+    <h5 class="modal-title" id="exampleModalLongTitle">Bucket Manager</h5>
+    <button type="button" class="close" @onclick="@this.Close" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <div class="row">
+        <div class="form-group col-md-10" >
+            <input type="text" class="form-control" id="newbucketName" placeholder="Enter a bucket name" @onchange="ValueChange" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary" @onclick="CreateNewBucket"><span class="oi oi-plus" /></button>
+        </div>
+    </div>
+    <div class="row">
+
+        <div class="form-group col-md-10">
+            <select class="btn btn-info" @onchange="SelectedChange">
+                @if (buckets != null)
+                {
+                    foreach (var item in buckets)
+                    {
+                        <option value="@item">@item</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-danger" @onclick="DeleteBucket"><span class="oi oi-x" /></button>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" @onclick="@this.Close">Close</button>
+</div>
+
+@code {
+
+    //All buckets.
+    IEnumerable<string> buckets;
+
+    //New bucket name
+    private string newBucketName = "";
+
+    //Select bucket name.
+    private string selectedBucketName = "";
+
+    //Close the dialog.
+    private void Close()
+    {
+        forgeControl.DialogShowed = false; 
+        forgeControl.SetChanged();
+    }
+
+
+    /// <summary>
+    /// Write down new bucket name 
+    /// </summary>
+    /// <param name="e">Contains new bucket name</param>
+    private void ValueChange(ChangeEventArgs e)
+    {
+        this.newBucketName = e.Value.ToString();
+    }
+
+
+    /// <summary>
+    /// Select an bucket to delete.
+    /// </summary>
+    /// <param name="e">Contains the exist bucket name</param>
+    private void SelectedChange(ChangeEventArgs e)
+    {
+        this.selectedBucketName = e.Value.ToString();
+
+    }
+
+    /// <summary>
+    /// Delete the bucket.
+    /// </summary>
+    private async void DeleteBucket()
+    {
+        //check if any object is selected.
+        if (string.IsNullOrWhiteSpace(selectedBucketName))
+        {
+            await jsRuntime.InvokeVoidAsync("alert", "Please select a bucket");
+            return;
+        }
+
+        //delete the object.
+        bool isDeleted = await forgeControl.OSS.DeleteBucket(selectedBucketName);
+        if (isDeleted)
+        {
+            await jsRuntime.InvokeVoidAsync("alert", "Bucket was deleted successfully.");
+            this.OnInitialized();
+        }
+        else
+            await jsRuntime.InvokeVoidAsync("alert", "Bucket could not be deleted.");
+    }
+
+    /// <summary>
+    /// Create new bucket
+    /// </summary>
+    private async void CreateNewBucket()
+    {
+        
+        if (string.IsNullOrWhiteSpace(newBucketName))
+        {
+            await jsRuntime.InvokeVoidAsync("alert", "Please enter a bucket name");
+            return;
+
+        }
+
+        bool isCreated = await forgeControl.OSS.CreateBucket(this.newBucketName);
+        if (isCreated)
+        {
+            await jsRuntime.InvokeVoidAsync("alert", "Bucket was created successfully.");
+            this.OnInitialized();
+        }
+        else
+            await jsRuntime.InvokeVoidAsync("alert", "Bucket could not be created.");
+
+
+
+    }
+    /// <summary>
+    /// Initialize the bucket dialog.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+
+        var temp = new List<string>();
+
+        var list = Task.Run(forgeControl.GetAllBuckets).Result;
+        list.ForEach((node) =>
+        {
+            temp.Add(node.BucketKey);
+        });
+
+
+        this.buckets = temp.AsEnumerable<string>();
+
+        StateHasChanged();
+    }
+}
