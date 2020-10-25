@@ -1,0 +1,64 @@
+﻿@using ForgeApp.Controllers;
+
+@page "/"
+<body class="index">
+    <div class="container">
+        <h3 style="color:#4B0082">Welcome</h3>
+        <p style="color:#4B0082">
+            To do authorize please click!
+
+        </p>
+        <a class="button" style="vertical-align:bottom" @onclick="@Authorize" target="_self"><span style="color:aliceblue">Authorize</span></a>
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <p>
+                <a data-bind="@error" style="color:red;top:5px">
+                    Error: @error
+                </a>
+            </p>
+         }
+    </div>
+    </body>
+@code
+{
+    /// <summary>
+    /// Initialize the appliaction index page
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        forgeControl.Status = "Authorizing...";
+        forgeControl.IsAuthorized = false;
+
+    }
+
+
+    /// <summary>
+    /// Authorize the Autodesk Forge account.
+    /// Go to viewer page.
+    /// </summary>
+    private async void Authorize()
+    {
+        error = "";
+        try
+        {
+            //Create new access token requester.
+            Auth.Token token;
+
+            //Get access token
+            token = await auth.GetTokenAsync();
+
+            //create new oss data manager.
+            forgeControl.OSS = new OSSRequest(token);
+
+            //go to viewer page
+            manager.NavigateTo("viewer",true);
+
+        }
+        catch(Exception ex)
+        {
+            error = ex.Message;
+            StateHasChanged();
+        }
+    }
+    private string error = "";
+}

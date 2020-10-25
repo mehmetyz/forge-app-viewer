@@ -1,0 +1,183 @@
+﻿@using BlazorInputFile;
+@using System.IO;
+
+
+<div class="modal-header">
+    <h5 class="modal-title" id="uploadModal">Upload Object</h5>
+    <button type="button" class="close" @onclick="@this.Close" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <div class="container-fluid">
+        <div class="row-flex">
+            <InputFile OnChange="HandleFileSelected" />
+            @if(file != null)
+            {
+                <b>@file.Name</b>
+            }
+        </div>
+        <div class="row-flex">
+            <small class="form-text text-muted">Please choose your object file path.</small>
+        </div>
+    </div>
+    <div class="row-flex">
+
+        <b>Bucket: </b>
+        <div class="form-group mx-sm-3 mb-2">
+            <select class="form-control" @onchange="DropDownChange">
+                @if (data != null)
+                {
+                    foreach (var item in data)
+                    {
+                        <option value="@item">@item</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" @onclick="@this.Close">Close</button>
+    <button type="button" class="btn btn-primary" @onclick ="UploadClick">Upload</button>
+</div>
+
+@code {
+
+    //selected file
+    IFileListEntry file;
+
+    //selected bucket key
+    private string bucketKey = "";
+
+    //all buckets stored,
+    IEnumerable<string> data;
+
+
+    /// <summary>
+    /// Select a file to upload into bucket.
+    /// </summary>
+    /// <param name="files">files that are selected</param>
+    private void HandleFileSelected(IFileListEntry[] files)
+    {
+        //first file we will upload.
+       
+        file = files.FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Close this dialog.
+    /// </summary>
+    private void Close()
+    {
+        forgeControl.DialogShowed = false;
+        forgeControl.SetChanged();
+    }
+
+    /// <summary>
+    /// Select a bucket for uploading file.
+    /// </summary>
+    /// <param name="e">Bucket selected item's class</param>
+    private void DropDownChange(ChangeEventArgs e)
+    {
+        this.bucketKey = e.Value?.ToString();
+    }
+
+    /// <summary>
+    /// Upload the file into the bucket.
+    /// </summary>
+    private async void UploadClick()
+    {
+        //Check the bucket is selected or not.
+        if (string.IsNullOrWhiteSpace(this.bucketKey))
+        {
+            await jsRuntime.InvokeVoidAsync("alert", "You must select a bucekt");
+            return;
+        }
+        //Check the file is empty or not
+        if (file == null)
+            throw new FileNotFoundException();
+
+
+        //To copy the file into our local storage to upload easily.
+        //Choose a folder named 'upload'
+        //Check if exists or not and if not, create new one named the folder name.
+        string directroy = Path.Combine(environment.ContentRootPath,"upload");
+        if (!Directory.Exists(directroy))
+            Directory.CreateDirectory(directroy);
+
+
+        //combine the local storage and file name. Example: ../upload/upload_file_name.upload_file_extension
+        //check if exist, delete it to create new.
+        string path = Path.Combine(directroy,file.Name);
+        if (File.Exists(path))
+            File.Delete(path);
+        FileStream fs = File.Create(path);
+        
+        //Copy file into created path.
+        await file.Data.CopyToAsync(fs);
+
+        //Get size of file.
+        long length = fs.Length;
+
+
+        //Close the stream and start uploading...
+        fs.Close();
+        forgeControl.DialogShowed = false;
+        forgeControl.Status = "Uploading... [" + file.Name + "]";
+        forgeControl.SetChanged();
+
+
+        //Upload controllers.
+        forgeControl.OSS.Upload += ((q, w) =>
+        {
+            if(q)
+            {
+                forgeControl.Status = "Uploaded!";
+                forgeControl.SetChanged();
+            }
+            else
+            {
+                forgeControl.Status = "Uploading [" + w.Name + "]";
+                forgeControl.SetChanged();
+            }
+        });
+        forgeControl.OSS.ProgressUpload += ((q,w,e) =>
+        {
+            forgeControl.Status = "Uploading [" + w.Name + "]" + " [" +e.ToString()+" %]";
+            forgeControl.SetChanged();
+        });
+
+        //Send a request for uploading the file
+        await forgeControl.UploadObject(bucketKey,path,length);
+
+
+        //If the uploading was completed.
+        if (Directory.Exists(directroy))
+            Directory.Delete(directroy, true);
+    }
+
+    /// <summary>
+    /// Upload object dilaog initialized function.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+
+        //Get all buckets.
+        var list = Task.Run(forgeControl.GetAllBuckets).Result;
+
+        //Store the buckets in a list.
+        var temp = new List<string>();
+        list.ForEach((node) =>
+        {
+            temp.Add(node.BucketKey);
+        });
+
+        //convert the list into the global list.
+        this.data = temp.AsEnumerable<string>();
+
+        //selected bucket key will be first element of the list, because dropdown list first element is this.
+        this.bucketKey = data.FirstOrDefault();
+    }
+
+}

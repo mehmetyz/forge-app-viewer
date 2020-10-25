@@ -1,0 +1,42 @@
+﻿@using Radzen;
+@using Radzen.Blazor;
+@using ForgeApp.Controllers;
+
+
+@page "/viewer"
+
+    <body>
+        <div class="container-fluid">
+            <div class="row" style="height: 500px">
+                <div class="col-12">
+
+                    <!--forgeControl.IsObjectsLoad, that checks if all buckets and their objects were loaded. -->
+                    @if (!forgeControl.IsObjectsLoad)
+                    {
+                        <img src="/load.png" />
+                    }
+                    else
+                    {
+                        <div id="forgeViewer" />
+                    }
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-12">
+                    <ForgeApp.Components.Items />
+                </div>
+            </div>
+        </div>
+    </body>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        forgeControl.IsViewerPageLoad = true;
+        forgeControl.Changed += (o, e) =>
+        {
+            InvokeAsync(() => { StateHasChanged(); });
+        };
+    }
+}

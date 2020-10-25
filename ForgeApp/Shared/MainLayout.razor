@@ -1,0 +1,63 @@
+﻿@inherits LayoutComponentBase
+
+<div class="sidebar">
+    <NavMenu />
+</div>
+
+<div class="main">
+    <div class="top-row px-4">
+        @if (forgeControl.IsAuthorized)
+        {
+            <a class="float-right" style="margin-right:50%" data-bind="@forgeControl.Status"> @forgeControl.Status </a>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+                <!--forgeControl.IsObjectsLoad, that checks if all buckets and their objects were loaded. -->
+                <button class="btn btn-info" disabled="@(!forgeControl.IsObjectsLoad)" @onclick="@((e)=> {flag = true; forgeControl.DialogShowed = true; })">
+                    <span class="oi oi-cloud-upload" /> Upload Object
+
+                </button>
+                &nbsp;
+                <!--forgeControl.IsObjectsLoad, that checks if all buckets and their objects were loaded. -->
+                <button id="btnPrimary" class="btn btn-primary" disabled="@(!forgeControl.IsObjectsLoad)" @onclick="@((e)=> {flag = false; forgeControl.DialogShowed = true; })">
+                    <span class="oi oi-cloud" /> Bucket Manager
+                </button>
+            </nav>
+        }
+        else
+        {
+            <a>Unauthorized</a>
+        }
+    </div>
+    <div class="col-lg-12">
+        @Body
+    </div>
+</div>
+
+@if (forgeControl.DialogShowed)
+{
+    <div class="modal fade show" id="upperModal" style="display:block" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                @if(flag)
+                {
+                    <ForgeApp.Components.UploadObject/>
+                }
+                else
+                {
+                    <ForgeApp.Components.BucketManager/>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code
+{
+    private bool flag = false;
+    protected override void OnInitialized()
+    {
+        forgeControl.Changed += (o, e) => { InvokeAsync(() => StateHasChanged()); };
+    }
+
+
+}
